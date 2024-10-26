@@ -23,7 +23,9 @@ from PIL import Image, ImageDraw, ImageFont, ImageGrab
 import matplotlib.font_manager as fm
 from openai import OpenAI
 import sys
-
+from pynput.keyboard import Controller
+import keyboard
+import time
 
 load_dotenv()
 
@@ -37,7 +39,7 @@ monitor_size = {
     "width": 1920,
     "height": 1080,
 }
-
+pyautogui.setKeyboardLayout()
 VISION_PROMPT = """
 You are a Self-Operating Computer. You use the same operating system as a human.
 
@@ -241,7 +243,8 @@ def main(model, accurate_mode, terminal_prompt, voice_mode=False):
             print(f"{ANSI_RED}Error in capturing voice input: {e}{ANSI_RESET}")
             return  # Exit if voice input fails
     else:
-        print(f"{ANSI_GREEN}[Self-Operating Computer]\n{ANSI_RESET}{USER_QUESTION}")
+        print(
+            f"{ANSI_GREEN}[Self-Operating Computer]\n{ANSI_RESET}{USER_QUESTION}")
         print(f"{ANSI_YELLOW}[User]{ANSI_RESET}")
         objective = prompt(style=style)
 
@@ -258,7 +261,8 @@ def main(model, accurate_mode, terminal_prompt, voice_mode=False):
         if DEBUG:
             print("[loop] messages before next action:\n\n\n", messages[1:])
         try:
-            response = get_next_action(model, messages, objective, accurate_mode)
+            response = get_next_action(
+                model, messages, objective, accurate_mode)
             action = parse_oai_response(response)
             action_type = action.get("type")
             action_detail = action.get("data")
@@ -336,7 +340,8 @@ def format_vision_prompt(objective, previous_action):
         previous_action = f"Here was the previous action you took: {previous_action}"
     else:
         previous_action = ""
-    prompt = VISION_PROMPT.format(objective=objective, previous_action=previous_action)
+    prompt = VISION_PROMPT.format(
+        objective=objective, previous_action=previous_action)
     return prompt
 
 
@@ -354,7 +359,8 @@ def format_accurate_mode_vision_prompt(prev_x, prev_y):
 
 def get_next_action(model, messages, objective, accurate_mode):
     if model == "gpt-4-vision-preview":
-        content = get_next_action_from_openai(messages, objective, accurate_mode)
+        content = get_next_action_from_openai(
+            messages, objective, accurate_mode)
         return content
     elif model == "agent-1":
         return "coming soon"
@@ -381,7 +387,8 @@ def accurate_mode_double_check(pseudo_messages, prev_x, prev_y):
     Reprompt OAI with additional screenshot of a mini screenshot centered around the cursor for further finetuning of clicked location
     """
     try:
-        screenshot_filename = os.path.join("screenshots", "screenshot_mini.png")
+        screenshot_filename = os.path.join(
+            "screenshots", "screenshot_mini.png")
         capture_mini_screenshot_with_cursor(
             file_path=screenshot_filename, x=prev_x, y=prev_y
         )
@@ -393,7 +400,8 @@ def accurate_mode_double_check(pseudo_messages, prev_x, prev_y):
         with open(new_screenshot_filename, "rb") as img_file:
             img_base64 = base64.b64encode(img_file.read()).decode("utf-8")
 
-        accurate_vision_prompt = format_accurate_mode_vision_prompt(prev_x, prev_y)
+        accurate_vision_prompt = format_accurate_mode_vision_prompt(
+            prev_x, prev_y)
 
         accurate_mode_message = {
             "role": "user",
@@ -501,7 +509,8 @@ def get_next_action_from_openai(messages, objective, accurate_mode):
                     print(
                         f"Previous coords before accurate tuning: prev_x {prev_x} prev_y {prev_y}"
                     )
-                content = accurate_mode_double_check(pseudo_messages, prev_x, prev_y)
+                content = accurate_mode_double_check(
+                    pseudo_messages, prev_x, prev_y)
                 assert content != "ERROR", "ERROR: accurate_mode_double_check failed"
 
         return content
@@ -539,7 +548,8 @@ def summarize(messages, objective):
         if not os.path.exists(screenshots_dir):
             os.makedirs(screenshots_dir)
 
-        screenshot_filename = os.path.join(screenshots_dir, "summary_screenshot.png")
+        screenshot_filename = os.path.join(
+            screenshots_dir, "summary_screenshot.png")
         # Call the function to capture the screen with the cursor
         capture_screen_with_cursor(screenshot_filename)
 
@@ -642,14 +652,17 @@ def add_grid_to_image(original_image_path, new_image_path, grid_interval):
         position, text, draw, font_size, bg_width, bg_height
     ):
         # Adjust the position based on the background size
-        text_position = (position[0] + bg_width // 2, position[1] + bg_height // 2)
+        text_position = (position[0] + bg_width // 2,
+                         position[1] + bg_height // 2)
         # Draw the text background
         draw.rectangle(
-            [position[0], position[1], position[0] + bg_width, position[1] + bg_height],
+            [position[0], position[1], position[0] +
+                bg_width, position[1] + bg_height],
             fill="white",
         )
         # Draw the text
-        draw.text(text_position, text, fill="black", font_size=font_size, anchor="mm")
+        draw.text(text_position, text, fill="black",
+                  font_size=font_size, anchor="mm")
 
     # Draw vertical lines and labels at every `grid_interval` pixels
     for x in range(grid_interval, width, grid_interval):
@@ -677,11 +690,247 @@ def add_grid_to_image(original_image_path, new_image_path, grid_interval):
     image.save(new_image_path)
 
 
+french_azerty_qwerty_layout = {
+    'a': 'q',
+    'z': 'w',
+    'e': 'e',
+    'r': 'r',
+    't': 't',
+    'y': 'y',
+    'u': 'u',
+    'i': 'i',
+    'o': 'o',
+    'p': 'p',
+    'q': 'a',
+    's': 's',
+    'd': 'd',
+    'f': 'f',
+    'g': 'g',
+    'h': 'h',
+    'j': 'j',
+    'k': 'k',
+    'l': 'l',
+    'm': 'm',
+    'w': 'z',
+    'x': 'x',
+    'c': 'c',
+    'v': 'v',
+    'b': 'b',
+    'n': 'n',
+    'A': 'Q',
+    'Z': 'W',
+    'E': 'E',
+    'R': 'R',
+    'T': 'T',
+    'Y': 'Y',
+    'U': 'U',
+    'I': 'I',
+    'O': 'O',
+    'P': 'P',
+    'Q': 'A',
+    'S': 'S',
+    'D': 'D',
+    'F': 'F',
+    'G': 'G',
+    'H': 'H',
+    'J': 'J',
+    'K': 'K',
+    'L': 'L',
+    'M': 'M',
+    'W': 'Z',
+    'X': 'X',
+    'C': 'C',
+    'V': 'V',
+    'B': 'B',
+    'N': 'N',
+    'é': '2',
+    'è': '7',
+    'à': 'ù',
+    'ù': 'ù',
+    'ç': 'ç',
+    'ô': '8',
+    'ê': '3',
+    'û': '9',
+    'î': '4',
+    'ë': '0',
+    'ï': '5',
+    'ü': '6',
+    'É': 'Shift+2',
+    'È': 'Shift+7',
+    'À': 'Shift+ù',
+    'Ç': 'Shift+ç',
+    'Ô': 'Shift+8',
+    'Ê': 'Shift+3',
+    'Û': 'Shift+9',
+    'Î': 'Shift+4',
+    'Ë': 'Shift+0',
+    'Ï': 'Shift+5',
+    'Ü': 'Shift+6',
+    ' ': ' ',
+    '.': '.',
+    ',': ',',
+    '?': '?',
+    '!': '!',
+    "'": "'",
+    '"': '"',
+    ':': ':',
+    ';': ';',
+    '-': '-',
+    '': '',
+    '+': '+',
+    '=': '=',
+    '(': '(',
+    ')': ')',
+    '[': '[',
+    ']': ']',
+    '{': '{',
+    '}': '}',
+}
+
+# azerty_layout = {
+#     'q': 'a',
+#     'w': 'z',
+#     'e': 'e',
+#     'r': 'r',
+#     't': 't',
+#     'y': 'y',
+#     'u': 'u',
+#     'i': 'i',
+#     'o': 'o',
+#     'p': 'p',
+#     'a': 'q',
+#     's': 's',
+#     'd': 'd',
+#     'f': 'f',
+#     'g': 'g',
+#     'h': 'h',
+#     'j': 'j',
+#     'k': 'k',
+#     'l': 'l',
+#     'm': 'm',
+#     'z': 'w',
+#     'x': 'x',
+#     'c': 'c',
+#     'v': 'v',
+#     'b': 'b',
+#     'n': 'n',
+# }
+
+# azerty_layout = {
+#     'a': 'a',
+#     'b': 'b',
+#     'c': 'c',
+#     'd': 'd',
+#     'e': 'e',
+#     'f': 'f',
+#     'g': 'g',
+#     'h': 'h',
+#     'i': 'i',
+#     'j': 'j',
+#     'k': 'k',
+#     'l': 'l',
+#     'm': 'm',
+#     'n': 'n',
+#     'o': 'o',
+#     'p': 'p',
+#     'q': 'q',
+#     'r': 'r',
+#     's': 's',
+#     't': 't',
+#     'u': 'u',
+#     'v': 'v',
+#     'w': 'w',
+#     'x': 'x',
+#     'y': 'y',
+#     'z': 'z',
+#     'A': 'A',
+#     'B': 'B',
+#     'C': 'C',
+#     'D': 'D',
+#     'E': 'E',
+#     'F': 'F',
+#     'G': 'G',
+#     'H': 'H',
+#     'I': 'I',
+#     'J': 'J',
+#     'K': 'K',
+#     'L': 'L',
+#     'M': 'M',
+#     'N': 'N',
+#     'O': 'O',
+#     'P': 'P',
+#     'Q': 'Q',
+#     'R': 'R',
+#     'S': 'S',
+#     'T': 'T',
+#     'U': 'U',
+#     'V': 'V',
+#     'W': 'W',
+#     'X': 'X',
+#     'Y': 'Y',
+#     'Z': 'Z',
+#     '0': '0',
+#     '1': '1',
+#     '2': '2',
+#     '3': '3',
+#     '4': '4',
+#     '5': '5',
+#     '6': '6',
+#     '7': '7',
+#     '8': '8',
+#     '9': '9',
+#     ' ': 'space',  # Espace
+#     '.': 'dot',    # Point
+#     ',': 'comma',  # Virgule
+#     '?': 'question',  # Point d'interrogation
+#     '!': 'exclam',    # Point d'exclamation
+#     "'": 'quote',     # Apostrophe
+#     '"': 'dblquote',  # Guillemets doubles
+#     ':': 'colon',     # Deux-points
+#     ';': 'semicolon',  # Point-virgule
+#     '-': 'minus',     # Signe moins
+#     '_': 'underscore',  # Tiret bas
+#     '+': 'plus',      # Signe plus
+#     '=': 'equal',     # Signe égal
+#     '(': 'parenleft',  # Parenthèse gauche
+#     ')': 'parenright',  # Parenthèse droite
+#     '[': 'bracketleft',  # Crochet gauche
+#     ']': 'bracketright',  # Crochet droit
+#     '{': 'braceleft',  # Accolade gauche
+#     '}': 'braceright',  # Accolade droite
+# }
+
+
+def toggle_layout():
+    if keyboard.is_keyboard_unclaimed():
+        keyboard.remap_keys({}, french_azerty_qwerty_layout)
+    else:
+        keyboard.unhook_all()
+
+
 def keyboard_type(text):
+
+    # Ajoute un raccourci clavier (par exemple, Ctrl + Alt + L) pour basculer entre les modes AZERTY et QWERTY
+    keyboard.add_hotkey('ctrl+alt+l', toggle_layout)
+
+# Votre programme principal
     text = text.replace("\\n", "\n")
-    for char in text:
-        pyautogui.write(char)
+    keyboard.write(text)
+    # for char in text:
+    # pyautogui.write(char)
+
+    # letters = "poiuytrezaqwsxdcfvgbhnjklm"
+    # translated = "poiuytrewqazsxdcfvgbhnjkl,"
+
+    # tr = dict(zip(letters, translated))
+
+    # def translate(key):
+    #     return "".join(map(lambda x: tr.get(x.lower(), x), key))
+    # final_text = translate(text)
+    # for char in final_text:
+    #     pyautogui.write(char)
     pyautogui.press("enter")
+
     return "Type: " + text
 
 
@@ -721,8 +970,10 @@ def capture_mini_screenshot_with_cursor(
         y = (y / 100) * monitor_size["height"]
 
         # Define the coordinates for the rectangle
-        x1, y1 = int(x - ACCURATE_PIXEL_COUNT / 2), int(y - ACCURATE_PIXEL_COUNT / 2)
-        x2, y2 = int(x + ACCURATE_PIXEL_COUNT / 2), int(y + ACCURATE_PIXEL_COUNT / 2)
+        x1, y1 = int(x - ACCURATE_PIXEL_COUNT /
+                     2), int(y - ACCURATE_PIXEL_COUNT / 2)
+        x2, y2 = int(x + ACCURATE_PIXEL_COUNT /
+                     2), int(y + ACCURATE_PIXEL_COUNT / 2)
 
         screenshot = ImageGrab.grab(bbox=(x1, y1, x2, y2))
         screenshot = screenshot.resize(
@@ -747,7 +998,8 @@ def capture_mini_screenshot_with_cursor(
         ]  # convert x from 50 to 0.5 * monitor_width
         y = (y / 100) * monitor_size["height"]
 
-        x1, y1 = int(x - ACCURATE_PIXEL_COUNT / 2), int(y - ACCURATE_PIXEL_COUNT / 2)
+        x1, y1 = int(x - ACCURATE_PIXEL_COUNT /
+                     2), int(y - ACCURATE_PIXEL_COUNT / 2)
 
         width = ACCURATE_PIXEL_COUNT
         height = ACCURATE_PIXEL_COUNT
@@ -783,7 +1035,8 @@ def capture_screen_with_cursor(file_path):
         # Use the screencapture utility to capture the screen with the cursor
         subprocess.run(["screencapture", "-C", file_path])
     else:
-        print(f"The platform you're using ({user_platform}) is not currently supported")
+        print(
+            f"The platform you're using ({user_platform}) is not currently supported")
 
 
 def extract_json_from_string(s):
